@@ -1,23 +1,22 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Query
 from datetime import date
 from pydantic import BaseModel
+from config import ReportEnum, PopulationEnum
+import uvicorn
+from reports import dargot, salaries
 import pandas as pd
 import os
 
 app = FastAPI()
 
-class MaofRequest(BaseModel):
-    date_exec: date
-
-@app.get("/maof/")
-async def maof(maof_request: MaofRequest):
-    try:
-        output_csv = "path/to/your/output.csv"  # Placeholder
-
-        return {"message": "CSV generated successfully", "file": output_csv}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/")
+async def root(report_type: ReportEnum, population: PopulationEnum, date_exec: date = date.today()):
+    if report_type == ReportEnum.dargot:
+        df_result = dargot(population,date_exec)
+    if report_type == ReportEnum.salaries:
+        df_result = salaries(population, date_exec)
+    df_result.to_csv("results.csv")
+    return {"message": "Hello World"}
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=80)
